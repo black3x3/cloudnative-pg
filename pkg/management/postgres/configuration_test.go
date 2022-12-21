@@ -31,6 +31,7 @@ import (
 const (
 	ldapPassword        = "ldapPassword"
 	ldapBaseDN          = "ldapBaseDN"
+	ldapUrl             = "ldapUrl"
 	ldapBindDN          = "ldapBindDN"
 	ldapSearchAttribute = "ldapSearchAttribute"
 	ldapSearchFilter    = "ldapSearchFilter"
@@ -41,7 +42,7 @@ const (
 	ldapSuffix          = "ldapSuffix"
 )
 
-var _ = Describe("testing the building of the ldap config string", func() {
+var _ = Describe("testing the building of the ldap config without ldapurl string", func() {
 	cluster := apiv1.Cluster{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "configurationTest",
@@ -96,5 +97,43 @@ var _ = Describe("testing the building of the ldap config string", func() {
 		str := buildLDAPConfigString(baaCluster, ldapPassword)
 		Expect(str).To(Equal(fmt.Sprintf("host all all 0.0.0.0/0 ldap ldapserver=%s ldapport=%d ldapscheme=%s "+
 			"ldaptls=1 ldapprefix=\"%s\" ldapsuffix=\"%s\"", ldapServer, ldapPort, ldapScheme, ldapPrefix, ldapSuffix)))
+	})
+})
+
+var _ = Describe("testing the building of the ldap config with ldapurl string", func() {
+	cluster := apiv1.Cluster{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "configurationTest",
+			Namespace: "default",
+		},
+
+		Spec: apiv1.ClusterSpec{
+			PostgresConfiguration: apiv1.PostgresConfiguration{
+				LDAP: &apiv1.LDAPConfig{
+					BindSearchAuth: &apiv1.LDAPBindSearchAuth{
+						BindPassword: &corev1.SecretKeySelector{
+							LocalObjectReference: corev1.LocalObjectReference{
+								Name: "testLDAPBindPasswordSecret",
+							},
+							Key: "key",
+						},
+						BindDN:          ldapBindDN,
+						SearchAttribute: ldapSearchAttribute,
+						SearchFilter:    ldapSearchFilter,
+					},
+					LdapUrl: ldapUrl,
+					Scheme:  apiv1.LDAPSchemeLDAP,
+					Port:    ldapPort,
+					TLS:     true,
+				},
+			},
+		},
+	}
+
+	It("correctly builds a Ldap string with url", func() {
+		str := buildLDAPConfigString(&cluster, ldapPassword)
+		Expect(str).To(Equal(fmt.Sprintf("host all all 0.0.0.0/0 ldap ldapurl=\"%s\" ldapport=%d "+
+			"ldapscheme=%s ldaptls=1 ldapbinddn=\"%s\" "+
+			"ldapbindpasswd=%s ldapsearchfilter=%s ldapsearchattribute=%s", ldapUrl, ldapPort, ldapScheme, ldapBindDN, ldapPassword, ldapSearchFilter, ldapSearchAttribute)))
 	})
 })

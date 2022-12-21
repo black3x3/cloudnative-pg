@@ -771,6 +771,8 @@ const (
 
 // LDAPConfig contains the parameters needed for LDAP authentication
 type LDAPConfig struct {
+	// LDAP Url
+	LdapUrl string `json:"url,omitempty"`
 	// LDAP hostname or IP address
 	Server string `json:"server,omitempty"`
 	// LDAP server port

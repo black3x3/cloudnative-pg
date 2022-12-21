@@ -135,7 +135,13 @@ func buildLDAPConfigString(cluster *apiv1.Cluster, ldapBindPassword string) stri
 	}
 	ldapConfig := cluster.Spec.PostgresConfiguration.LDAP
 
-	ldapConfigString += fmt.Sprintf("host all all 0.0.0.0/0 ldap ldapserver=%s", ldapConfig.Server)
+	ldapConfigString += fmt.Sprintf("host all all 0.0.0.0/0 ldap")
+
+	if ldapConfig.LdapUrl != "" {
+		ldapConfigString += fmt.Sprintf(" ldapurl=\"%s\"", ldapConfig.LdapUrl)
+	} else {
+		ldapConfigString += fmt.Sprintf(" ldapserver=%s", ldapConfig.Server)
+	}
 
 	if ldapConfig.Port != 0 {
 		ldapConfigString += fmt.Sprintf(" ldapport=%d", ldapConfig.Port)
@@ -166,8 +172,12 @@ func buildLDAPConfigString(cluster *apiv1.Cluster, ldapBindPassword string) stri
 			"search attribute", ldapConfig.BindSearchAuth.SearchAttribute,
 			"search filter", ldapConfig.BindSearchAuth.SearchFilter)
 
-		ldapConfigString += fmt.Sprintf(" ldapbasedn=\"%s\" ldapbinddn=\"%s\" "+
-			"ldapbindpasswd=%s", ldapConfig.BindSearchAuth.BaseDN, ldapConfig.BindSearchAuth.BindDN, ldapBindPassword)
+		// if we use ldapurl we dont need BaseDN
+		if ldapConfig.BindSearchAuth.BaseDN != "" {
+			ldapConfigString += fmt.Sprintf(" ldapbasedn=\"%s\"", ldapConfig.BindSearchAuth.BaseDN)
+		}
+
+		ldapConfigString += fmt.Sprintf(" ldapbinddn=\"%s\" ldapbindpasswd=%s", ldapConfig.BindSearchAuth.BindDN, ldapBindPassword)
 		if ldapConfig.BindSearchAuth.SearchFilter != "" {
 			ldapConfigString += fmt.Sprintf(" ldapsearchfilter=%s", ldapConfig.BindSearchAuth.SearchFilter)
 		}
